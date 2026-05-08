@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DIRECTLINE // WAR ROOM</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#030405;--bg1:#080a0e;--bg2:#0d1016;--bg3:#12161e;--bg4:#181e28;--bg5:#1e2632;
+  --blue:#00aaff;--blue2:#0055aa;--blue3:rgba(0,170,255,0.08);
+  --red:#ff2233;--red2:#aa1122;--red3:rgba(255,34,51,0.08);
+  --green:#00ff88;--green2:#00aa55;--green3:rgba(0,255,136,0.08);
+  --amber:#ffaa00;--amber2:#aa6600;--amber3:rgba(255,170,0,0.08);
+  --t0:#ffffff;--t1:#c8d4e8;--t2:#5a6d85;--t3:#2a3a4a;
+  --bd:#151f2a;--bd2:#1e2d3d;--bd3:#2a3d52;
+  --hud:'Orbitron',monospace;--body:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace;
+  --panel-pad:20px;
+}
+html,body{background:var(--bg0);color:var(--t1);font-family:var(--body);font-size:14px;line-height:1.5;height:100%;overflow-x:hidden}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--bd3);border-radius:2px}
+
+/* SCANLINE + GRID */
+.scanline{position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.02) 3px,rgba(0,0,0,0.02) 4px)}
+.gridbg{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,170,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,170,255,0.018) 1px,transparent 1px);
+  background-size:60px 60px}
+
+/* MAIN WRAPPER */
+.os{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh;padding:0}
+
+/* ═══ TOP BAR ═══ */
+.topbar{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:20px;
+  padding:12px 24px;
+  background:var(--bg1);
+  border-bottom:1px solid var(--bd2);
+  position:sticky;top:0;z-index:100;
+}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue),var(--blue),transparent);opacity:.2}
+.brand{display:flex;align-items:center;gap:16px}
+.brand-title{font-family:var(--hud);font-size:16px;font-weight:900;color:var(--t0);letter-spacing:.12em;white-space:nowrap}
+.brand-title span{color:var(--blue)}
+.brand-sub{font-family:var(--mono);font-size:9px;color:var(--t2);letter-spacing:.12em;margin-top:2px}
+.topbar-center{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.clock-display{font-family:var(--hud);font-size:22px;color:var(--blue);letter-spacing:.05em;text-shadow:0 0 20px rgba(0,170,255,.3)}
+
+/* STATUS CHIPS */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:2px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;border:1px solid;white-space:nowrap}
+.chip-dot{width:5px;height:5px;border-radius:50%}
+.chip-blue{background:rgba(0,170,255,.06);border-color:rgba(0,170,255,.2);color:var(--blue)}
+.chip-blue .chip-dot{background:var(--blue);box-shadow:0 0 6px var(--blue)}
+.chip-green{background:rgba(0,255,136,.06);border-color:rgba(0,255,136,.2);color:var(--green)}
+.chip-green .chip-dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+.chip-red{background:rgba(255,34,51,.06);border-color:rgba(255,34,51,.2);color:var(--red)}
+.chip-red .chip-dot{background:var(--red);box-shadow:0 0 6px var(--red)}
+.chip-amber{background:rgba(255,170,0,.06);border-color:rgba(255,170,0,.2);color:var(--amber)}
+.chip-amber .chip-dot{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+
+/* ═══ BODY LAYOUT ═══ */
+.war-body{
+  display:grid;
+  grid-template-columns:320px 1fr 300px;
+  grid-template-rows:auto;
+  gap:0;
+  flex:1;
+  min-height:0;
+}
+
+/* COLUMNS */
+.col-left{border-right:1px solid var(--bd2);padding:20px 16px;display:flex;flex-direction:column;gap:14px;background:var(--bg1)}
+.col-center{padding:20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.col-right{border-left:1px solid var(--bd2);padding:20px 16px;display:flex;flex-direction:column;gap:14px;background:var(--bg1)}
+
+/* ═══ PANELS ═══ */
+.panel{background:var(--bg2);border:1px solid var(--bd2);border-radius:3px;padding:16px;position:relative;overflow:hidden;transition:border-color .2s}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;opacity:.4}
+.panel-blue::before{background:linear-gradient(90deg,transparent,var(--blue),transparent)}
+.panel-red::before{background:linear-gradient(90deg,transparent,var(--red),transparent)}
+.panel-green::before{background:linear-gradient(90deg,transparent,var(--green),transparent)}
+.panel-amber::before{background:linear-gradient(90deg,transparent,var(--amber),transparent)}
+.panel:hover{border-color:var(--bd3)}
+.panel-title{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--t2);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.panel-title::after{content:'';flex:1;height:1px;background:var(--bd2)}
+
+/* ═══ NOW BLOCK ═══ */
+.now-block{background:linear-gradient(135deg,rgba(0,170,255,.1),rgba(0,170,255,.02));border:1px solid rgba(0,170,255,.25);border-radius:3px;padding:16px;position:relative;overflow:hidden}
+.now-block::before{content:'NOW';position:absolute;right:12px;top:8px;font-family:var(--hud);font-size:32px;font-weight:900;color:rgba(0,170,255,.06);letter-spacing:.1em}
+.now-label{font-family:var(--mono);font-size:9px;color:var(--blue);letter-spacing:.15em;margin-bottom:8px}
+.now-text{font-size:14px;font-weight:600;color:var(--t0);line-height:1.5;font-family:var(--body)}
+
+/* ═══ SCORE RING ═══ */
+.score-zone{background:linear-gradient(135deg,rgba(0,170,255,.06),var(--bg2));border:1px solid var(--bd2);border-radius:3px;padding:24px;display:flex;align-items:center;gap:28px;position:relative;overflow:hidden}
+.score-zone::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue),transparent);opacity:.3}
+.ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.ring-lbl{position:absolute;text-align:center}
+.score-info{flex:1}
+.score-title{font-family:var(--mono);font-size:9px;color:var(--t2);letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px}
+.score-msg-el{font-family:var(--hud);font-size:18px;font-weight:700;letter-spacing:.04em;margin-bottom:6px;line-height:1.2}
+.score-sub-el{font-size:12px;color:var(--t2)}
+
+/* ═══ MISSIONS ═══ */
+.mission{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);cursor:pointer;transition:all .15s;border-radius:2px}
+.mission:last-child{border-bottom:none}
+.mission:hover{padding-left:6px;background:rgba(0,170,255,.02)}
+.mbox{width:16px;height:16px;border:1px solid var(--bd3);border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.mbox.done{background:var(--green);border-color:var(--green);box-shadow:0 0 8px rgba(0,255,136,.25)}
+.mbox.open{border-color:var(--red);animation:pulser 2s infinite}
+.mtxt{font-size:12px;font-family:var(--body);font-weight:500;flex:1;transition:all .2s;line-height:1.3}
+.mtxt.done{color:var(--t3);text-decoration:line-through}
+.mtxt.open{color:var(--t0)}
+.mpri{font-size:8px;font-family:var(--mono);padding:2px 6px;border-radius:2px;flex-shrink:0}
+
+/* ═══ KPI CARDS ═══ */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--bg3);border:1px solid var(--bd);border-radius:3px;padding:12px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px}
+.kpi-blue::before{background:var(--blue)}
+.kpi-green::before{background:var(--green)}
+.kpi-red::before{background:var(--red)}
+.kpi-amber::before{background:var(--amber)}
+.kpi-label{font-family:var(--mono);font-size:9px;color:var(--t2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.kpi-val{font-family:var(--hud);font-size:22px;font-weight:700;line-height:1}
+.kpi-sub{font-family:var(--mono);font-size:9px;color:var(--t2);margin-top:4px}
+
+/* ═══ PROGRESS BARS ═══ */
+.pbar-bg{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:6px}
+.pbar-fill{height:100%;border-radius:2px;transition:width 1s ease}
+
+/* ═══ ALERTS ═══ */
+.alert-item{border-left:2px solid var(--red);background:rgba(255,34,51,.04);padding:8px 12px;border-radius:0 3px 3px 0;font-family:var(--mono);font-size:10px;color:var(--red);margin-bottom:8px;animation:pulser 3s infinite;line-height:1.5}
+.alert-amber{border-left-color:var(--amber);color:var(--amber);background:rgba(255,170,0,.04);animation:none}
+.alert-green{border-left-color:var(--green);color:var(--green);background:rgba(0,255,136,.04);animation:none}
+
+/* ═══ SCREEN TIME ═══ */
+.st-app-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)}
+.st-app-row:last-child{border-bottom:none}
+
+/* ═══ LIFT BARS ═══ */
+.lift-row{margin-bottom:14px}
+.lift-row:last-child{margin-bottom:0}
+.lift-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.lift-name{font-family:var(--mono);font-size:10px;color:var(--t2);letter-spacing:.1em;text-transform:uppercase}
+.lift-val{font-family:var(--hud);font-size:16px;font-weight:700}
+.lift-target{font-family:var(--mono);font-size:9px;color:var(--t2)}
+
+/* ═══ INPUTS ═══ */
+input[type=number],input[type=text]{background:var(--bg1);border:1px solid var(--bd2);border-radius:2px;color:var(--t0);font-family:var(--mono);font-size:12px;padding:6px 9px;width:100%;outline:none;transition:border-color .2s}
+input:focus{border-color:var(--blue)}
+.inp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.inp-label{font-family:var(--mono);font-size:9px;color:var(--t2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+
+/* ═══ TABS ═══ */
+.tab-bar{display:flex;gap:3px;background:var(--bg1);border:1px solid var(--bd2);border-radius:3px;padding:3px;margin-bottom:14px}
+.tab{flex:1;padding:7px 4px;font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;text-align:center;cursor:pointer;border-radius:2px;border:none;background:transparent;color:var(--t2);transition:all .15s}
+.tab.active{background:var(--bg4);color:var(--blue);border:1px solid var(--bd3)}
+.tab:hover:not(.active){color:var(--t1)}
+.section{display:none}.section.active{display:block;animation:fadein .2s ease}
+
+/* ═══ BOTTOM BAR ═══ */
+.bottom-bar{background:var(--bg1);border-top:1px solid var(--bd2);padding:8px 24px;display:flex;justify-content:space-between;align-items:center}
+.bottom-bar span{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:.08em}
+
+/* ═══ VIDEO LIST ═══ */
+.vid-row{padding:8px 0;border-bottom:1px solid var(--bd);transition:padding-left .15s}
+.vid-row:hover{padding-left:4px}
+.vid-row:last-child{border-bottom:none}
+
+/* ═══ CONSEQUENCE ═══ */
+.threat-box{background:linear-gradient(135deg,rgba(255,34,51,.08),rgba(255,34,51,.02));border:1px solid rgba(255,34,51,.2);border-radius:3px;padding:14px}
+
+/* ═══ BTN ═══ */
+.btn{padding:7px 14px;font-size:10px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;border-radius:2px;cursor:pointer;transition:all .15s;border:1px solid var(--bd3);background:var(--bg3);color:var(--t1);width:100%;margin-top:8px}
+.btn-blue{background:rgba(0,170,255,.08);border-color:rgba(0,170,255,.3);color:var(--blue)}
+.btn-blue:hover{background:rgba(0,170,255,.15)}
+.niche-warn{background:rgba(255,34,51,.08);border:1px solid rgba(255,34,51,.3);border-radius:2px;padding:7px 10px;font-size:10px;font-family:var(--mono);color:var(--red);margin-bottom:7px;display:none}
+
+/* ═══ WEEKLY GRID ═══ */
+.week-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)}
+.week-row:last-child{border-bottom:none}
+
+/* ANIMATIONS */
+@keyframes pulser{0%,100%{opacity:.7}50%{opacity:1}}
+@keyframes fadein{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+@keyframes flicker{0%,100%{opacity:1}93%{opacity:.8}94%{opacity:1}97%{opacity:.85}98%{opacity:1}}
+.flicker{animation:flicker 8s infinite}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="gridbg"></div>
+<div class="os">
+
+<!-- ═══ TOP BAR ═══ -->
+<div class="topbar">
+  <div class="brand">
+    <div>
+      <div class="brand-title flicker">DIRECTLINE <span>// WAR ROOM</span></div>
+      <div class="brand-sub" id="datestr"></div>
+    </div>
+  </div>
+  <div class="topbar-center" id="topchips"></div>
+  <div class="topbar-right">
+    <div class="clock-display" id="clockstr"></div>
+  </div>
+</div>
+
+<!-- ═══ WAR BODY ═══ -->
+<div class="war-body">
+
+  <!-- LEFT COLUMN -->
+  <div class="col-left">
+
+    <!-- CRITICAL ALERTS -->
+    <div>
+      <div class="panel-title" style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        ◈ THREAT DETECTION <div style="flex:1;height:1px;background:var(--bd2)"></div>
+      </div>
+      <div id="alert-zone"></div>
+    </div>
+
+    <!-- NOW BLOCK -->
+    <div class="now-block">
+      <div class="now-label">◈ highest leverage action — now</div>
+      <div class="now-text" id="now-text"></div>
+    </div>
+
+    <!-- ACTIVE MISSIONS -->
+    <div class="panel panel-blue" style="flex:1">
+      <div class="panel-title panel-blue">◈ active missions <span id="mission-count" style="color:var(--blue);margin-left:auto"></span></div>
+      <div id="mission-list"></div>
+    </div>
+
+    <!-- THREAT / CONSEQUENCE -->
+    <div class="threat-box">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--red);letter-spacing:.12em;margin-bottom:8px">◈ THREAT ASSESSMENT</div>
+      <div style="font-size:13px;color:var(--t0);font-weight:500;line-height:1.7">Fail → <span style="color:var(--red)">college, 9-5, average life.</span></div>
+      <div style="font-size:13px;color:var(--t0);font-weight:500;line-height:1.7;margin-top:3px">Win → <span style="color:var(--green)">$30k/mo, McLaren, full control before 20.</span></div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="panel panel-blue">
+      <div class="panel-title">◈ operations schedule</div>
+      <div id="schedule-list"></div>
+    </div>
+
+  </div>
+
+  <!-- CENTER COLUMN -->
+  <div class="col-center">
+
+    <!-- SCORE -->
+    <div class="score-zone">
+      <div class="ring-wrap" style="width:120px;height:120px">
+        <svg width="120" height="120" style="transform:rotate(-90deg)">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#12161e" stroke-width="8"/>
+          <circle id="ring-arc" cx="60" cy="60" r="50" fill="none" stroke="#00ff88" stroke-width="8"
+            stroke-dasharray="314.16" stroke-dashoffset="314.16" stroke-linecap="round"
+            style="transition:stroke-dashoffset 1.2s ease,stroke .5s ease;filter:drop-shadow(0 0 8px #00ff88)"/>
+        </svg>
+        <div class="ring-lbl">
+          <div id="ring-num" style="font-size:28px;font-weight:700;font-family:var(--hud);color:var(--green)">0</div>
+          <div style="font-size:8px;color:var(--t2);letter-spacing:.12em;font-family:var(--mono)">SCORE</div>
+        </div>
+      </div>
+      <div class="score-info">
+        <div class="score-title">daily execution score</div>
+        <div class="score-msg-el" id="score-msg"></div>
+        <div class="score-sub-el" id="score-sub"></div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:6px">SUMMER IN</div>
+        <div id="days-summer" style="font-family:var(--hud);font-size:28px;font-weight:700;color:var(--amber)"></div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--t2);letter-spacing:.1em;margin-top:2px">DAYS</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:6px">VIEWS NEEDED</div>
+        <div id="views-needed-big" style="font-family:var(--hud);font-size:22px;font-weight:700;color:var(--red)"></div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--t2);letter-spacing:.1em;margin-top:2px">TO 10M</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchTab('content',this)">// content ops</button>
+      <button class="tab" onclick="switchTab('screen',this)">// screen time</button>
+      <button class="tab" onclick="switchTab('intel',this)">// intel sync</button>
+    </div>
+
+    <!-- CONTENT OPS -->
+    <div class="section active" id="tab-content">
+      <div class="panel panel-blue" style="margin-bottom:14px">
+        <div class="panel-title">◈ log new operation</div>
+        <input type="text" id="new-title" placeholder="Video title..." style="margin-bottom:8px" oninput="checkNiche(this.value)">
+        <div class="niche-warn" id="niche-warn">⚠ OFF-NICHE DETECTED — tension/family/reaction only. Abort or proceed at risk.</div>
+        <div class="inp-row" style="margin-bottom:0">
+          <div><div class="inp-label">views</div><input type="number" id="new-views" placeholder="0"></div>
+          <div><div class="inp-label">ctr %</div><input type="number" id="new-ctr" placeholder="0.0" step="0.1"></div>
+        </div>
+        <button class="btn btn-blue" onclick="addVideo()">+ LOG VIDEO</button>
+      </div>
+      <div class="panel panel-blue">
+        <div class="panel-title">◈ content library — sorted by views</div>
+        <div id="video-list"></div>
+      </div>
+    </div>
+
+    <!-- SCREEN TIME -->
+    <div class="section" id="tab-screen">
+      <div class="panel panel-amber" style="margin-bottom:14px">
+        <div class="panel-title">◈ screen time intel — bad time only</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+          <div>
+            <div class="inp-label" style="margin-bottom:3px">bad screen time</div>
+            <div id="st-bad-val" style="font-family:var(--hud);font-size:28px;font-weight:700"></div>
+            <div id="st-status" style="font-family:var(--mono);font-size:9px;margin-top:3px"></div>
+          </div>
+          <div>
+            <div class="inp-label" style="margin-bottom:3px">total today</div>
+            <div id="st-total-val" style="font-family:var(--hud);font-size:28px;font-weight:700;color:var(--t2)"></div>
+          </div>
+          <div>
+            <div class="inp-label" style="margin-bottom:3px">limit</div>
+            <div style="font-family:var(--hud);font-size:28px;font-weight:700;color:var(--t3)">2h 00m</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--t2)">bad time used</span>
+          <span style="font-family:var(--mono);font-size:9px" id="st-bar-label"></span>
+        </div>
+        <div class="pbar-bg" style="height:8px;border-radius:4px">
+          <div id="st-bar-fill" class="pbar-fill" style="height:8px;border-radius:4px"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px">
+          <span style="font-family:var(--mono);font-size:8px;color:var(--t3)">0h</span>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--t2)">▲ 2h limit</span>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--t3)">4h</span>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)">
+          <div class="inp-label" style="margin-bottom:8px;color:var(--t2)">app breakdown — bad time</div>
+          <div id="st-apps"></div>
+        </div>
+      </div>
+      <div class="panel panel-amber">
+        <div class="panel-title">◈ update screen time (minutes)</div>
+        <div class="inp-row">
+          <div><div class="inp-label">instagram</div><input type="number" id="st-ig" placeholder="0" oninput="updateScreenTime()"></div>
+          <div><div class="inp-label">tiktok</div><input type="number" id="st-tt" placeholder="0" oninput="updateScreenTime()"></div>
+          <div><div class="inp-label">snapchat</div><input type="number" id="st-sc" placeholder="0" oninput="updateScreenTime()"></div>
+          <div><div class="inp-label">other waste</div><input type="number" id="st-other" placeholder="0" oninput="updateScreenTime()"></div>
+        </div>
+        <div><div class="inp-label" style="margin-bottom:4px">total screen time (mins)</div><input type="number" id="st-total-inp" placeholder="0" oninput="updateScreenTime()"></div>
+      </div>
+    </div>
+
+    <!-- INTEL SYNC -->
+    <div class="section" id="tab-intel">
+      <div class="panel panel-blue">
+        <div class="panel-title">◈ sync intel — update daily</div>
+        <div class="inp-row">
+          <div><div class="inp-label">total channel views</div><input type="number" id="inp-views" oninput="updateViews(this.value)"></div>
+          <div><div class="inp-label">subscribers</div><input type="number" id="inp-subs" oninput="updateSubs(this.value)"></div>
+        </div>
+      </div>
+      <div class="panel panel-blue" style="margin-top:14px">
+        <div class="panel-title">◈ update lifts</div>
+        <div class="inp-row">
+          <div><div class="inp-label">bench (lb)</div><input type="number" id="inp-bench"></div>
+          <div><div class="inp-label">squat (lb)</div><input type="number" id="inp-squat"></div>
+        </div>
+        <div><div class="inp-label" style="margin-bottom:4px">deadlift (lb)</div><input type="number" id="inp-dl" style="max-width:50%"></div>
+        <button class="btn btn-blue" onclick="saveLifts()">SYNC LIFTS</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="col-right">
+
+    <!-- MONETIZATION KPIs -->
+    <div>
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:8px">◈ MONEY PIPELINE <div style="flex:1;height:1px;background:var(--bd2)"></div></div>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--t1)" id="views-label"></span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--blue)" id="views-pct"></span>
+        </div>
+        <div class="pbar-bg"><div class="pbar-fill" id="views-bar" style="background:linear-gradient(90deg,var(--blue2),var(--blue))"></div></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--t1)" id="subs-label"></span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--green)" id="subs-pct"></span>
+        </div>
+        <div class="pbar-bg"><div class="pbar-fill" id="subs-bar" style="background:linear-gradient(90deg,var(--green2),var(--green))"></div></div>
+      </div>
+      <div class="kpi-grid" style="margin-bottom:0">
+        <div class="kpi kpi-blue"><div class="kpi-label">daily target</div><div class="kpi-val" id="daily-target" style="color:var(--blue)"></div><div class="kpi-sub">views/day</div></div>
+        <div class="kpi kpi-amber"><div class="kpi-label">avg ctr</div><div class="kpi-val" id="avg-ctr-r"></div><div class="kpi-sub" id="ctr-sub"></div></div>
+        <div class="kpi kpi-green"><div class="kpi-label">on-niche</div><div class="kpi-val" id="niche-r"></div><div class="kpi-sub" id="niche-sub"></div></div>
+        <div class="kpi kpi-amber"><div class="kpi-label">est $/mo</div><div class="kpi-val" id="est-earn" style="color:var(--t2)"></div><div class="kpi-sub">at $0.06 rpm</div></div>
+      </div>
+    </div>
+
+    <!-- SCREEN TIME SUMMARY RIGHT -->
+    <div class="panel panel-amber">
+      <div class="panel-title">◈ screen time status</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t1)">Bad time today</span>
+        <span id="st-right-bad" style="font-family:var(--hud);font-size:18px;font-weight:700"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t1)">Total time</span>
+        <span id="st-right-total" style="font-family:var(--hud);font-size:18px;font-weight:700;color:var(--t2)"></span>
+      </div>
+      <div class="pbar-bg"><div id="st-right-bar" class="pbar-fill"></div></div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--t2);margin-top:4px;text-align:right" id="st-right-label"></div>
+    </div>
+
+    <!-- LIFT STATUS -->
+    <div class="panel panel-green">
+      <div class="panel-title">◈ physical status</div>
+      <div id="lift-display"></div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd);display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
+        <div><div style="font-family:var(--mono);font-size:8px;color:var(--t2);margin-bottom:3px">WEIGHT</div><div style="font-family:var(--hud);font-size:13px;font-weight:700;color:var(--t0)">180lb</div></div>
+        <div><div style="font-family:var(--mono);font-size:8px;color:var(--t2);margin-bottom:3px">B/F</div><div style="font-family:var(--hud);font-size:13px;font-weight:700;color:var(--t0)">~12%</div></div>
+        <div><div style="font-family:var(--mono);font-size:8px;color:var(--t2);margin-bottom:3px">PROG</div><div style="font-family:var(--hud);font-size:13px;font-weight:700;color:var(--green)">5/3/1</div></div>
+      </div>
+    </div>
+
+    <!-- WEEKLY LOG -->
+    <div class="panel panel-blue">
+      <div class="panel-title">◈ weekly discipline log</div>
+      <div id="week-log"></div>
+    </div>
+
+    <!-- CONTENT INTEL -->
+    <div class="panel panel-blue">
+      <div class="panel-title">◈ content intel</div>
+      <div id="content-intel"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <span>DIRECTLINE // WAR ROOM OS v3.0</span>
+  <span id="footer-mid"></span>
+  <span id="footer-right"></span>
+</div>
+
+</div>
+
+<script>
+var SCHOOL_END=new Date('2026-05-29');
+function isSummer(){return new Date()>SCHOOL_END;}
+function daysUntil(){var d=SCHOOL_END-new Date();return d>0?Math.ceil(d/86400000):0;}
+var NICHE=["not happy","not ready","never mess","karma","gender reveal","brother","sister","dad","mom","family","baby","reaction","stormed out","walked out","protect","defend","caught","surprise","husband","wife","son","daughter"];
+var SCHED_SCHOOL=[
+  {time:"07:00",label:"WAKE UP — open War Room",color:"#00aaff"},
+  {time:"07:30",label:"School — locked in",color:"#2a3a4a"},
+  {time:"15:15",label:"School out — 30min decompress max",color:"#2a3a4a"},
+  {time:"16:00",label:"SOURCE CLIP → Script → Edit → POST by 18:00",color:"#ff2233"},
+  {time:"18:00",label:"WAR ROOM CHECK-IN — analyze video",color:"#00aaff"},
+  {time:"20:00",label:"Pre-source tomorrow's clip",color:"#ff2233"},
+  {time:"21:00",label:"Wind down — phone down",color:"#2a3a4a"},
+];
+var SCHED_SUMMER=[
+  {time:"07:30",label:"WAKE UP — open War Room",color:"#00aaff"},
+  {time:"08:00",label:"Basketball till 10:00",color:"#00cc66"},
+  {time:"10:00",label:"Shower — nap (1hr max)",color:"#00cc66"},
+  {time:"12:30",label:"SOURCE CLIP → Script → Edit",color:"#ff2233"},
+  {time:"15:00",label:"POST VIDEO — no exceptions",color:"#ff2233"},
+  {time:"15:30",label:"Analyze video — find 1 improvement",color:"#ffaa00"},
+  {time:"17:00",label:"Study / build systems",color:"#0066cc"},
+  {time:"18:00",label:"WAR ROOM CHECK-IN",color:"#00aaff"},
+  {time:"20:00",label:"Pre-source tomorrow's clip",color:"#ff2233"},
+  {time:"21:00",label:"Wind down — phone down",color:"#2a3a4a"},
+];
+var DEFAULT_MISSIONS=[
+  {id:"post",label:"Posted video today",done:false,priority:"critical"},
+  {id:"niche",label:"Video was on-niche (tension/payoff)",done:false,priority:"critical"},
+  {id:"gym",label:"Trained today",done:false,priority:"high"},
+  {id:"clip",label:"Pre-sourced tomorrow's clip",done:false,priority:"high"},
+  {id:"analyze",label:"Analyzed video performance",done:false,priority:"high"},
+  {id:"nopm",label:"No PMO",done:false,priority:"discipline"},
+  {id:"screen",label:"Bad screen time under 2hrs",done:false,priority:"discipline"},
+];
+var DEFAULT_VIDEOS=[
+  {id:1,title:"This is why you NEVER mess with someone's brother",views:41431,ctr:1.6,date:"Feb 6"},
+  {id:2,title:"This Cat Was 1 Inch Away From Stealing Fish",views:33085,ctr:4.1,date:"Feb 20"},
+  {id:3,title:"He was NOT happy",views:32800,ctr:4.2,date:"May 2"},
+  {id:4,title:"Everything went WRONG at 10 seconds",views:29054,ctr:0.7,date:"Mar 3"},
+  {id:5,title:"He is NOT happy",views:24226,ctr:7.6,date:"May 6"},
+  {id:6,title:"He Got Robbed... But Karma Hit Instantly",views:15525,ctr:2.0,date:"Mar 18"},
+  {id:7,title:"She almost fell in the pool",views:7002,ctr:1.3,date:"Mar 13"},
+  {id:8,title:"Baby's first time at doctor",views:6075,ctr:7.2,date:"May 3"},
+  {id:9,title:"You won't BELIEVE the sound",views:2903,ctr:7.5,date:"Feb 16"},
+  {id:10,title:"Grinch saves Christmas",views:2738,ctr:0.3,date:"Mar 29"},
+  {id:11,title:"DOG STEALS FOOD",views:2385,ctr:2.7,date:"Feb 26"},
+  {id:12,title:"She was NOT ready",views:1732,ctr:13.0,date:"May 7"},
+];
+var S={
+  views:206443,subs:196,
+  lifts:{bench:185,squat:250,deadlift:250},
+  liftTargets:{bench:300,squat:500,deadlift:500},
+  missions:JSON.parse(JSON.stringify(DEFAULT_MISSIONS)),
+  videos:JSON.parse(JSON.stringify(DEFAULT_VIDEOS)),
+  screenTime:{ig:40,tt:30,sc:0,other:0,total:348},
+  lastResetDate:'',weekScores:[100,71,85,57,100,0,0]
+};
+function getTodayStr(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function checkDailyReset(){
+  var today=getTodayStr();
+  if(S.lastResetDate!==today){
+    S.missions=JSON.parse(JSON.stringify(DEFAULT_MISSIONS));
+    S.screenTime={ig:0,tt:0,sc:0,other:0,total:0};
+    S.lastResetDate=today;saveState();
+  }
+}
+function saveState(){try{localStorage.setItem('wr3',JSON.stringify(S));}catch(e){}}
+function loadState(){
+  try{var d=JSON.parse(localStorage.getItem('wr3'));
+    if(d){['views','subs','lifts','missions','videos','screenTime','lastResetDate','weekScores'].forEach(function(k){if(d[k]!=null)S[k]=d[k];});}
+  }catch(e){}
+}
+function pct(v,mx){return Math.min(100,Math.round(v/mx*100));}
+function isOnNiche(t){var tl=t.toLowerCase();return NICHE.some(function(k){return tl.indexOf(k)>=0;});}
+function offNicheCount(){return S.videos.filter(function(v){return !isOnNiche(v.title);}).length;}
+function avgCTR(){return(S.videos.reduce(function(a,v){return a+v.ctr;},0)/S.videos.length).toFixed(1);}
+function scoreCalc(){return Math.round(S.missions.filter(function(m){return m.done;}).length/S.missions.length*100);}
+function scoreColor(s){return s>=85?'#00ff88':s>=60?'#ffaa00':'#ff2233';}
+function scoreMsg(s){if(s===100)return'PERFECT EXECUTION';if(s>=85)return'STRONG DAY';if(s>=60)return'ACCEPTABLE — PUSH HARDER';if(s>=40)return'WEAK. COLLEGE IS WAITING.';return'FAILURE STATE — FIX NOW';}
+function minsToStr(m){if(!m||m===0)return'0m';var h=Math.floor(m/60),mn=m%60;return h>0?h+'h '+(mn>0?mn+'m':''):mn+'m';}
+function getBadMins(){return(parseInt(S.screenTime.ig)||0)+(parseInt(S.screenTime.tt)||0)+(parseInt(S.screenTime.sc)||0)+(parseInt(S.screenTime.other)||0);}
+function getCurrentBlock(){
+  var h=new Date().getHours();
+  if(isSummer()){
+    if(h<7)return{label:'SLEEP CYCLE — wake at 07:30',color:'#2a3a4a'};
+    if(h<10)return{label:'BASKETBALL — locked in',color:'#00cc66'};
+    if(h<12)return{label:'RECOVERY — nap, then prep clip',color:'#00cc66'};
+    if(h<15)return{label:'EXECUTE — source, script, edit, POST BY 15:00',color:'#ff2233'};
+    if(h<16)return{label:'DEBRIEF — analyze today\'s video now',color:'#ffaa00'};
+    if(h<18)return{label:'BUILD MODE — study, systems, skills',color:'#0066cc'};
+    if(h<21)return{label:'WAR ROOM CHECK-IN — pre-source tomorrow\'s clip',color:'#00aaff'};
+    return{label:'WIND DOWN — phone down, sleep by 23:00',color:'#2a3a4a'};
+  }else{
+    if(h<7)return{label:'SLEEP CYCLE — wake at 07:00',color:'#2a3a4a'};
+    if(h<15)return{label:'SCHOOL — locked in',color:'#2a3a4a'};
+    if(h<16)return{label:'DECOMPRESS 30MIN — then source clip immediately',color:'#ffaa00'};
+    if(h<18)return{label:'EXECUTE — source, script, edit, POST by 18:00',color:'#ff2233'};
+    if(h<21)return{label:'CHECK-IN — study + pre-source tomorrow',color:'#00aaff'};
+    return{label:'WIND DOWN — phone down, sleep by 23:00',color:'#2a3a4a'};
+  }
+}
+
+function updateClock(){
+  var now=new Date();
+  document.getElementById('clockstr').textContent=now.toTimeString().slice(0,8);
+  document.getElementById('datestr').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}).toUpperCase();
+}
+function renderNow(){
+  var b=getCurrentBlock();
+  document.getElementById('now-text').innerHTML='<span style="color:'+b.color+'">▶ </span>'+b.label;
+}
+function renderChips(){
+  var s=scoreCalc();var bad=getBadMins();var off=offNicheCount();
+  var chips=[
+    {label:(isSummer()?'SUMMER MODE':daysUntil()+'D TO SUMMER'),cls:'chip-amber'},
+    {label:s+'% EXECUTION',cls:s>=70?'chip-green':'chip-red'},
+    {label:'VIEWS: '+S.views.toLocaleString(),cls:'chip-blue'},
+    {label:'SUBS: '+S.subs+'/500',cls:S.subs>=400?'chip-green':'chip-amber'},
+    {label:'ST: '+(bad<120?'CLEAN':'OVER LIMIT'),cls:bad<120?'chip-green':'chip-red'},
+    {label:off>0?off+' OFF-NICHE':'NICHE CLEAN',cls:off>0?'chip-red':'chip-green'},
+    {label:S.missions.filter(function(m){return m.done;}).length+'/'+S.missions.length+' MISSIONS',cls:'chip-blue'},
+  ];
+  document.getElementById('topchips').innerHTML=chips.map(function(c){
+    return'<div class="chip '+c.cls+'"><div class="chip-dot"></div>'+c.label+'</div>';
+  }).join('');
+}
+function renderAlerts(){
+  var html='';var bad=getBadMins();var off=offNicheCount();
+  var h=new Date().getHours();
+  var posted=S.missions.find(function(m){return m.id==='post';});
+  if(h>=15&&posted&&!posted.done)html+='<div class="alert-item"> NO VIDEO POSTED — post immediately. Every day missed kills momentum.</div>';
+  if(bad>=120)html+='<div class="alert-item">SCREEN TIME EXCEEDED — '+minsToStr(bad)+' of waste. Lock in.</div>';
+  if(off>0)html+='<div class="alert-item">'+off+' OFF-NICHE VIDEO'+(off>1?'S':'')+' — algorithm confusion. Fix now.</div>';
+  if(html==='')html='<div class="alert-item alert-green">ALL SYSTEMS NOMINAL — no active threats.</div>';
+  document.getElementById('alert-zone').innerHTML=html;
+}
+function renderMissions(){
+  var html='';
+  S.missions.forEach(function(m){
+    var pc=m.priority==='critical'?'background:rgba(255,34,51,.1);color:#ff2233;border:1px solid rgba(255,34,51,.2)':m.priority==='high'?'background:rgba(255,170,0,.1);color:#ffaa00;border:1px solid rgba(255,170,0,.2)':'background:rgba(0,170,255,.1);color:#00aaff;border:1px solid rgba(0,170,255,.2)';
+    html+='<div class="mission" onclick="toggleMission(\''+m.id+'\')">'+
+      '<div class="mbox '+(m.done?'done':'open')+'">'+(m.done?'<span style="color:#000;font-weight:700;font-size:11px">✓</span>':'')+'</div>'+
+      '<span class="mtxt '+(m.done?'done':'open')+'">'+m.label+'</span>'+
+      '<span class="mpri" style="'+pc+'">'+m.priority.toUpperCase()+'</span>'+
+      '</div>';
+  });
+  var done=S.missions.filter(function(m){return m.done;}).length;
+  document.getElementById('mission-count').textContent=done+'/'+S.missions.length;
+  document.getElementById('mission-list').innerHTML=html;
+}
+function toggleMission(id){
+  if(id==='screen')return;
+  S.missions=S.missions.map(function(m){return m.id===id?Object.assign({},m,{done:!m.done}):m;});
+  saveState();renderAll();
+}
+function renderSchedule(){
+  var sched=isSummer()?SCHED_SUMMER:SCHED_SCHOOL;
+  var h=new Date().getHours();
+  var html='';
+  sched.forEach(function(s,i){
+    var sh=parseInt(s.time);var active=h===sh;
+    html+='<div class="sched-row" style="padding:'+(active?'6px 8px':'5px 0')+';background:'+(active?'rgba(0,170,255,.04)':'transparent')+';border-left:'+(active?'2px solid var(--blue)':'2px solid transparent')+';padding-left:'+(active?'8px':'0')+'">'+
+      '<span style="font-family:var(--mono);font-size:10px;color:var(--t2);min-width:38px">'+s.time+'</span>'+
+      '<div style="width:5px;height:5px;border-radius:50%;background:'+s.color+';flex-shrink:0;box-shadow:'+(active?'0 0 6px '+s.color:'none')+'"></div>'+
+      '<span style="font-size:12px;color:'+(active?'var(--t0)':'var(--t1)')+';font-weight:'+(active?600:400)+';flex:1;padding-left:8px">'+s.label+'</span>'+
+      (active?'<span style="font-family:var(--mono);font-size:8px;background:rgba(0,170,255,.1);color:var(--blue);border:1px solid rgba(0,170,255,.2);padding:2px 6px;border-radius:2px">NOW</span>':'')+
+      '</div>';
+  });
+  document.getElementById('schedule-list').innerHTML=html;
+}
+function renderScore(){
+  var s=scoreCalc();var c=scoreColor(s);
+  var circ=2*Math.PI*50;
+  var arc=document.getElementById('ring-arc');
+  arc.style.strokeDashoffset=circ-(s/100)*circ;
+  arc.style.stroke=c;arc.style.filter='drop-shadow(0 0 8px '+c+')';
+  document.getElementById('ring-num').textContent=s;document.getElementById('ring-num').style.color=c;
+  document.getElementById('score-msg').textContent=scoreMsg(s);document.getElementById('score-msg').style.color=c;
+  var done=S.missions.filter(function(m){return m.done;}).length;
+  document.getElementById('score-sub').textContent=done+' of '+S.missions.length+' missions complete today';
+  var ds=document.getElementById('days-summer');
+  if(isSummer()){ds.textContent='NOW';ds.style.color='var(--green)';}else{ds.textContent=daysUntil();ds.style.color='var(--amber)';}
+  document.getElementById('views-needed-big').textContent=((10000000-S.views)/1000000).toFixed(2)+'M';
+}
+function renderPipeline(){
+  var vp=pct(S.views,10000000);var sp=pct(S.subs,500);
+  var ctr=parseFloat(avgCTR());var off=offNicheCount();var vn=10000000-S.views;
+  document.getElementById('views-label').textContent='VIEWS '+S.views.toLocaleString()+' / 10M';
+  document.getElementById('views-pct').textContent=vp+'%';
+  document.getElementById('views-bar').style.width=vp+'%';
+  document.getElementById('subs-label').textContent='SUBS '+S.subs+' / 500';
+  document.getElementById('subs-pct').textContent=sp+'%';
+  document.getElementById('subs-bar').style.width=sp+'%';
+  document.getElementById('daily-target').textContent=Math.ceil(vn/90).toLocaleString();
+  var ce=document.getElementById('avg-ctr-r');ce.textContent=ctr+'%';ce.style.color=ctr>=5?'var(--green)':'var(--amber)';
+  document.getElementById('ctr-sub').textContent=ctr>=5?'above threshold':'needs work';
+  var ne=document.getElementById('niche-r');ne.textContent=(S.videos.length-off)+'/'+S.videos.length;ne.style.color=off===0?'var(--green)':'var(--red)';
+  document.getElementById('niche-sub').textContent=off===0?'clean':off+' off-niche';
+  document.getElementById('est-earn').textContent='$'+Math.round(S.views*0.00006);
+}
+function renderScreenTime(){
+  var bad=getBadMins();var total=S.screenTime.total;
+  var c=bad===0?'var(--green)':bad<120?'var(--amber)':'var(--red)';
+  var bpct=Math.min(100,Math.round(bad/240*100));
+  var fill=bad>120?'linear-gradient(90deg,var(--red2),var(--red))':bad<120?'linear-gradient(90deg,var(--amber2),var(--amber))':'linear-gradient(90deg,var(--green2),var(--green))';
+  ['st-bad-val','st-right-bad'].forEach(function(id){var el=document.getElementById(id);if(el){el.textContent=minsToStr(bad);el.style.color=c;}});
+  ['st-total-val','st-right-total'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=minsToStr(total);});
+  var st=document.getElementById('st-status');if(st){st.textContent=bad>120?'OVER LIMIT':bad<60?'CLEAN':'CAUTION';st.style.color=c;}
+  var bl=document.getElementById('st-bar-label');if(bl){bl.textContent=minsToStr(bad)+' / 2h';bl.style.color=c;}
+  var bf=document.getElementById('st-bar-fill');if(bf){bf.style.width=bpct+'%';bf.style.background=fill;}
+  var rb=document.getElementById('st-right-bar');if(rb){rb.style.width=bpct+'%';rb.style.background=fill;}
+  var rl=document.getElementById('st-right-label');if(rl){rl.textContent=minsToStr(bad)+' / 2h limit';rl.style.color=c;}
+  // apps
+  var apps=[{name:'Instagram',mins:S.screenTime.ig,color:'#E1306C'},{name:'TikTok',mins:S.screenTime.tt,color:'#00f2ea'},{name:'Snapchat',mins:S.screenTime.sc,color:'#fffc00'},{name:'Other',mins:S.screenTime.other,color:'#6a7d9a'}].filter(function(a){return a.mins>0;});
+  var maxA=apps.length?Math.max.apply(null,apps.map(function(a){return a.mins;})):1;
+  var ah='';
+  apps.forEach(function(a){var w=Math.round(a.mins/maxA*100);ah+='<div class="st-app-row"><span style="font-family:var(--mono);font-size:10px;color:var(--t1);min-width:70px">'+a.name+'</span><div style="flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden"><div style="width:'+w+'%;height:100%;background:'+a.color+'"></div></div><span style="font-family:var(--mono);font-size:10px;color:var(--t2);min-width:28px;text-align:right">'+minsToStr(a.mins)+'</span></div>';});
+  if(!ah)ah='<div style="font-family:var(--mono);font-size:10px;color:var(--green);padding:6px 0">No bad screen time logged.</div>';
+  var sa=document.getElementById('st-apps');if(sa)sa.innerHTML=ah;
+  // auto-check mission
+  S.missions=S.missions.map(function(m){return m.id==='screen'?Object.assign({},m,{done:bad<120}):m;});
+}
+function updateScreenTime(){
+  S.screenTime.ig=parseInt(document.getElementById('st-ig').value)||0;
+  S.screenTime.tt=parseInt(document.getElementById('st-tt').value)||0;
+  S.screenTime.sc=parseInt(document.getElementById('st-sc').value)||0;
+  S.screenTime.other=parseInt(document.getElementById('st-other').value)||0;
+  S.screenTime.total=parseInt(document.getElementById('st-total-inp').value)||0;
+  saveState();renderAll();
+}
+function renderLifts(){
+  var html='';
+  ['bench','squat','deadlift'].forEach(function(l){
+    var p=pct(S.lifts[l],S.liftTargets[l]);
+    var c=p>=90?'var(--green)':p>=60?'var(--blue)':'var(--amber)';
+    var bg=p>=90?'linear-gradient(90deg,var(--green2),var(--green))':p>=60?'linear-gradient(90deg,var(--blue2),var(--blue))':'linear-gradient(90deg,var(--amber2),var(--amber))';
+    html+='<div class="lift-row">'+
+      '<div class="lift-header">'+
+        '<span class="lift-name">'+l+'</span>'+
+        '<span class="lift-val" style="color:'+c+'">'+S.lifts[l]+'<span style="font-size:11px;color:var(--t2);font-weight:400"> lb</span></span>'+
+        '<span class="lift-target">/ '+S.liftTargets[l]+'lb</span>'+
+      '</div>'+
+      '<div class="pbar-bg"><div class="pbar-fill" style="width:'+p+'%;background:'+bg+'"></div></div>'+
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--t2);margin-top:3px;text-align:right">'+p+'% · '+(S.liftTargets[l]-S.lifts[l])+'lb to go</div>'+
+      '</div>';
+  });
+  document.getElementById('lift-display').innerHTML=html;
+}
+function renderWeekLog(){
+  var days=['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  var html='';
+  days.forEach(function(d,i){
+    var s=S.weekScores[i];var c=s>=85?'var(--green)':s>=60?'var(--amber)':s>0?'var(--red)':'var(--bg4)';
+    html+='<div class="week-row"><span style="font-family:var(--mono);font-size:10px;color:var(--t2);min-width:26px">'+d+'</span>'+
+      '<div style="flex:1;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden"><div style="width:'+s+'%;height:100%;background:'+c+';border-radius:2px"></div></div>'+
+      '<span style="font-family:var(--mono);font-size:10px;min-width:30px;text-align:right;color:'+c+'">'+(s>0?s+'%':'—')+'</span></div>';
+  });
+  document.getElementById('week-log').innerHTML=html;
+}
+function renderContentIntel(){
+  var sorted=[...S.videos].sort(function(a,b){return b.views-a.views;});
+  var top=sorted[0];var off=offNicheCount();var ctr=parseFloat(avgCTR());
+  var html='<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bd)">'+
+    '<div style="font-family:var(--mono);font-size:9px;color:var(--t2);margin-bottom:3px">TOP VIDEO</div>'+
+    '<div style="font-size:12px;color:var(--blue);font-weight:600;line-height:1.3">'+top.title+'</div>'+
+    '<div style="font-family:var(--mono);font-size:10px;color:var(--t2);margin-top:3px">'+top.views.toLocaleString()+' views · CTR '+top.ctr+'%</div></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+    '<div><div style="font-family:var(--mono);font-size:9px;color:var(--t2);margin-bottom:3px">AVG CTR</div><div style="font-family:var(--hud);font-size:16px;font-weight:700;color:'+(ctr>=5?'var(--green)':'var(--amber)')+'">'+ctr+'%</div></div>'+
+    '<div><div style="font-family:var(--mono);font-size:9px;color:var(--t2);margin-bottom:3px">OFF-NICHE</div><div style="font-family:var(--hud);font-size:16px;font-weight:700;color:'+(off===0?'var(--green)':'var(--red)')+'">'+off+'</div></div>'+
+    '</div>';
+  document.getElementById('content-intel').innerHTML=html;
+}
+function renderVideoList(){
+  var sorted=[...S.videos].sort(function(a,b){return b.views-a.views;});
+  var maxV=sorted[0]?sorted[0].views:1;
+  var html='';
+  sorted.forEach(function(v){
+    var on=isOnNiche(v.title);var ctrC=v.ctr>=7?'var(--green)':v.ctr>=4?'var(--amber)':'var(--red)';
+    var bw=Math.round(v.views/maxV*100);
+    html+='<div class="vid-row">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+        '<div style="flex:1;padding-right:10px">'+
+          '<div style="font-size:12px;color:var(--t0);font-weight:500;line-height:1.4">'+v.title+'</div>'+
+          '<div style="display:flex;gap:7px;margin-top:3px;align-items:center">'+
+            '<span style="font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;background:'+(on?'rgba(0,255,136,.1)':'rgba(255,34,51,.1)')+';color:'+(on?'var(--green)':'var(--red)')+';border:1px solid '+(on?'rgba(0,255,136,.2)':'rgba(255,34,51,.2)')+'">'+( on?'ON':'OFF-NICHE')+'</span>'+
+            '<span style="font-family:var(--mono);font-size:9px;color:'+ctrC+'">CTR '+v.ctr+'%</span>'+
+            '<span style="font-family:var(--mono);font-size:9px;color:var(--t2)">'+v.date+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<div style="font-family:var(--hud);font-size:15px;font-weight:700;color:'+(on?'var(--blue)':'var(--t2)')+';white-space:nowrap">'+v.views.toLocaleString()+'</div>'+
+      '</div>'+
+      '<div class="pbar-bg"><div class="pbar-fill" style="width:'+bw+'%;background:'+(on?'linear-gradient(90deg,var(--blue2),var(--blue))':'var(--bg4)')+'"></div></div>'+
+      '</div>';
+  });
+  document.getElementById('video-list').innerHTML=html;
+}
+function checkNiche(val){document.getElementById('niche-warn').style.display=(val&&!isOnNiche(val))?'block':'none';}
+function addVideo(){
+  var t=document.getElementById('new-title').value.trim();
+  var v=parseInt(document.getElementById('new-views').value)||0;
+  var c=parseFloat(document.getElementById('new-ctr').value)||0;
+  if(!t||!v)return;
+  var now=new Date();
+  S.videos.unshift({id:Date.now(),title:t,views:v,ctr:c,date:now.toLocaleDateString('en-US',{month:'short',day:'numeric'})});
+  S.views+=v;
+  document.getElementById('new-title').value='';document.getElementById('new-views').value='';document.getElementById('new-ctr').value='';
+  document.getElementById('niche-warn').style.display='none';
+  document.getElementById('inp-views').value=S.views;
+  saveState();renderAll();
+}
+function updateViews(v){S.views=parseInt(v)||0;saveState();renderAll();}
+function updateSubs(v){S.subs=parseInt(v)||0;saveState();renderAll();}
+function saveLifts(){
+  S.lifts.bench=parseInt(document.getElementById('inp-bench').value)||S.lifts.bench;
+  S.lifts.squat=parseInt(document.getElementById('inp-squat').value)||S.lifts.squat;
+  S.lifts.deadlift=parseInt(document.getElementById('inp-dl').value)||S.lifts.deadlift;
+  saveState();renderLifts();
+}
+function switchTab(id,btn){
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  document.getElementById('tab-'+id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+}
+function syncInputs(){
+  document.getElementById('inp-views').value=S.views;
+  document.getElementById('inp-subs').value=S.subs;
+  document.getElementById('inp-bench').value=S.lifts.bench;
+  document.getElementById('inp-squat').value=S.lifts.squat;
+  document.getElementById('inp-dl').value=S.lifts.deadlift;
+  document.getElementById('st-ig').value=S.screenTime.ig||'';
+  document.getElementById('st-tt').value=S.screenTime.tt||'';
+  document.getElementById('st-sc').value=S.screenTime.sc||'';
+  document.getElementById('st-other').value=S.screenTime.other||'';
+  document.getElementById('st-total-inp').value=S.screenTime.total||'';
+}
+function renderFooter(){
+  var vn=10000000-S.views;
+  document.getElementById('footer-mid').textContent='DAILY TARGET: '+Math.ceil(vn/90).toLocaleString()+' VIEWS/DAY';
+  document.getElementById('footer-right').textContent='v3.0 // '+getTodayStr();
+}
+function renderAll(){
+  updateClock();renderNow();renderChips();renderAlerts();
+  renderMissions();renderSchedule();renderScore();renderPipeline();
+  renderScreenTime();renderLifts();renderWeekLog();renderContentIntel();renderVideoList();
+  renderFooter();
+}
+loadState();checkDailyReset();syncInputs();renderAll();
+setInterval(function(){updateClock();renderNow();renderSchedule();},1000);
+setInterval(function(){renderChips();renderAlerts();},30000);
+</script>
+</body>
+</html>
